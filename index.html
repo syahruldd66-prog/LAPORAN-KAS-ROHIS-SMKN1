@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kas Rohis - SYAHRUL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .status-lunas { background-color: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+        .status-cicil { background-color: #fef9c3; color: #854d0e; border: 1px solid #fef08a; }
+        .status-belum { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    </style>
+</head>
+<body class="bg-slate-100 font-sans p-4 text-slate-800">
+
+    <div class="max-w-4xl mx-auto">
+        <header class="bg-white p-6 rounded-3xl shadow-md mb-6 border border-slate-200">
+            <div class="flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-black text-blue-600">KAS ROHIS ONLINE</h1>
+                    <div id="dbStatus" class="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Status: Menghubungkan...</div>
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="loginAdmin()" id="adminBtn" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-300 transition-all">ADMIN LOGIN</button>
+                    <button onclick="openInput()" class="px-5 py-2 bg-blue-600 text-white rounded-2xl text-xs font-bold shadow-lg shadow-blue-200 hover:bg-blue-700 transition-all">+ BAYAR</button>
+                </div>
+            </div>
+            
+            <div class="mt-6 border-t pt-4">
+                <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase tracking-wider">Cek Anggota</label>
+                <select id="selectNama" onchange="loadTable()" class="w-full p-3 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none focus:border-blue-500 font-bold uppercase"></select>
+            </div>
+        </header>
+
+        <div class="bg-white rounded-3xl shadow-md overflow-hidden border border-slate-200">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead class="bg-slate-50 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b">
+                        <tr>
+                            <th class="p-4">Bulan</th>
+                            <th class="p-4 text-right">Bayar</th>
+                            <th class="p-4 text-right">Sisa</th>
+                            <th class="p-4 text-center">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="isiTabel" class="divide-y divide-slate-50 text-sm"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <footer class="mt-10 text-center">
+            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">Developed by <span class="text-blue-500">SYAHRUL</span></p>
+        </footer>
+    </div>
+
+    <div id="modalBox" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl">
+            <h3 class="text-xl font-black mb-6 text-center italic">INPUT PEMBAYARAN</h3>
+            <div class="space-y-4 text-sm">
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Bulan</label>
+                    <select id="pilihBulan" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold outline-none"></select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-slate-400 ml-2 uppercase">Nominal</label>
+                    <input type="number" id="nominalUang" placeholder="Contoh: 10000" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-black text-blue-600 outline-none">
+                </div>
+            </div>
+            <div class="flex gap-3 mt-8">
+                <button onclick="closeModal()" class="flex-1 py-4 text-slate-400 font-bold text-xs uppercase">Batal</button>
+                <button onclick="simpanData()" class="flex-1 py-4 bg-blue-600 text-white rounded-[20px] font-black text-xs shadow-xl shadow-blue-100 hover:bg-blue-700">SIMPAN</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        // CONFIG BARU SYAHRUL (DENGAN DB URL)
+        const firebaseConfig = {
+            apiKey: "AIzaSyCs6ZoVvXI9oAlosX7LXc8wj8Ij2NU0hAE",
+            authDomain: "kas-rohis-7574a.firebaseapp.com",
+            projectId: "kas-rohis-7574a",
+            storageBucket: "kas-rohis-7574a.firebasestorage.app",
+            messagingSenderId: "539974548681",
+            appId: "1:539974548681:web:fbd414598ae4ccbf496118",
+            measurementId: "G-HSYT3QP9B8",
+            // Tambahkan URL Database kamu di sini (Wajib)
+            databaseURL: "https://kas-rohis-7574a-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const databaseRef = ref(db, 'pembayaran_kas');
+
+        let dataLokal = {};
+        let adminStatus = false;
+
+        const listNama = ["anditenrilengka", "muhammad sa'ad hamzah", "nurul alifiyatul aswan", "naswa", "saskia", "syahrul", "evi agnesia", "melinda saputri", "andi syahrul yudiono", "Almira ramadhani", "reski sulistia", "andi ratu bilqis", "andi muh luqman", "arkan fikri", "besse nurfadillah", "fitria", "putriani", "andi fadhil rumpang", "muh. resky wijaya", "muh fikran", "muh fauzan hidayatullah", "nurul sabila ramadhani", "nur asmil hasanah", "febri aulya kasunaya", "muh. iqbal", "yuliana", "Muh ilham", "Aldi supriadi", "zahrah rahmadhani"].sort();
+        const listBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+
+        const selNama = document.getElementById('selectNama');
+        listNama.forEach(n => selNama.innerHTML += `<option value="${n}">${n.toUpperCase()}</option>`);
+        const selBulan = document.getElementById('pilihBulan');
+        listBulan.forEach((b, i) => selBulan.innerHTML += `<option value="${i}">${b}</option>`);
+
+        onValue(databaseRef, (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                dataLokal = data;
+                document.getElementById('dbStatus').innerText = "Cloud Online ✅";
+                document.getElementById('dbStatus').className = "text-[10px] font-bold text-green-500 uppercase tracking-widest";
+            } else {
+                // Jika DB baru masih kosong, buat struktur awalnya
+                let init = {};
+                listNama.forEach(n => init[n] = listBulan.map(b => ({ namaBulan: b, terbayar: 0 })));
+                set(databaseRef, init);
+            }
+            loadTable();
+        }, (error) => {
+            document.getElementById('dbStatus').innerText = "Akses Ditolak (Cek Rules!)";
+            document.getElementById('dbStatus').className = "text-[10px] font-bold text-rose-500 uppercase tracking-widest";
+        });
+
+        window.loginAdmin = function() {
+            const pass = prompt("Password Admin (SYAHRUL):");
+            if (pass === "KAS ROHIS") {
+                adminStatus = true;
+                document.getElementById('adminBtn').innerText = "ADMIN: SYAHRUL";
+                document.getElementById('adminBtn').classList.replace('bg-slate-200', 'bg-green-500');
+                document.getElementById('adminBtn').classList.add('text-white');
+                alert("Berhasil Login Admin!");
+            } else {
+                alert("Password Salah!");
+            }
+        };
+
+        window.openInput = () => {
+            if(!adminStatus) return alert("Hanya SYAHRUL (Admin) yang bisa menginput data!");
+            document.getElementById('modalBox').classList.remove('hidden');
+        };
+
+        window.closeModal = () => document.getElementById('modalBox').classList.add('hidden');
+
+        window.loadTable = function() {
+            const namaAktif = document.getElementById('selectNama').value;
+            const dataNama = dataLokal[namaAktif] || [];
+            const container = document.getElementById('isiTabel');
+            container.innerHTML = '';
+
+            dataNama.forEach(item => {
+                const sisa = 10000 - item.terbayar;
+                let status = "BELUM", sClass = "status-belum";
+                if(item.terbayar >= 10000) { status = "LUNAS"; sClass = "status-lunas"; }
+                else if(item.terbayar > 0) { status = "DICICIL"; sClass = "status-cicil"; }
+
+                container.innerHTML += `
+                    <tr>
+                        <td class="p-4 font-bold text-slate-600">${item.namaBulan}</td>
+                        <td class="p-4 text-right text-green-600 font-black">Rp ${item.terbayar.toLocaleString()}</td>
+                        <td class="p-4 text-right text-rose-500 font-black">Rp ${Math.max(0, sisa).toLocaleString()}</td>
+                        <td class="p-4 text-center">
+                            <span class="px-3 py-1 rounded-full text-[9px] font-black border ${sClass}">${status}</span>
+                        </td>
+                    </tr>`;
+            });
+        };
+
+        window.simpanData = function() {
+            if(!adminStatus) return;
+
+            const targetNama = document.getElementById('selectNama').value;
+            const targetBulan = document.getElementById('pilihBulan').value;
+            const inputDuit = document.getElementById('nominalUang');
+            const jumlah = parseInt(inputDuit.value);
+
+            if(!jumlah || jumlah <= 0) return alert("Masukkan nominal angka yang benar!");
+
+            // Update lokal
+            dataLokal[targetNama][targetBulan].terbayar += jumlah;
+            
+            // Simpan ke Firebase
+            set(databaseRef, dataLokal)
+                .then(() => {
+                    alert("Berhasil disimpan!");
+                    closeModal();
+                    inputDuit.value = '';
+                })
+                .catch(e => alert("Gagal Simpan: " + e.message + "\nPastikan Rules Firebase sudah 'true'"));
+        };
+    </script>
+</body>
+</html>
