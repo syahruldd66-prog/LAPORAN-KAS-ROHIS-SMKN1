@@ -17,18 +17,18 @@
         <header class="bg-white p-6 rounded-3xl shadow-md mb-6 border border-slate-200">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div>
-                    <h1 class="text-2xl font-black text-blue-600 uppercase">Kas Rohis Online</h1>
+                    <h1 class="text-2xl font-black text-blue-600">KAS ROHIS ONLINE</h1>
                     <div id="dbStatus" class="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Status: Menghubungkan...</div>
                 </div>
                 <div class="flex gap-2">
-                    <button id="adminBtn" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-300 transition-all">ADMIN LOGIN</button>
-                    <button id="btnBukaInput" class="px-5 py-2 bg-blue-600 text-white rounded-2xl text-xs font-bold shadow-lg">+ BAYAR</button>
+                    <button onclick="loginAdmin()" id="adminBtn" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold hover:bg-slate-300">ADMIN LOGIN</button>
+                    <button onclick="openInput()" class="px-5 py-2 bg-blue-600 text-white rounded-2xl text-xs font-bold shadow-lg">+ BAYAR</button>
                 </div>
             </div>
             
             <div class="mt-6 border-t pt-4">
                 <label class="block text-[10px] font-black text-slate-400 mb-2 uppercase">Pilih Anggota</label>
-                <select id="selectNama" class="w-full p-3 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold uppercase"></select>
+                <select id="selectNama" onchange="loadTable()" class="w-full p-3 bg-slate-50 border-2 border-slate-100 rounded-2xl outline-none font-bold uppercase"></select>
             </div>
         </header>
 
@@ -47,6 +47,7 @@
                 </table>
             </div>
         </div>
+
         <footer class="mt-10 text-center text-[10px] text-slate-400 font-bold uppercase tracking-[0.3em]">
             Developed by <span class="text-blue-500">SYAHRUL</span>
         </footer>
@@ -54,18 +55,18 @@
 
     <div id="modalBox" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
         <div class="bg-white w-full max-w-sm rounded-[40px] p-8 shadow-2xl">
-            <h3 class="text-xl font-black mb-6 text-center">INPUT KAS</h3>
+            <h3 class="text-xl font-black mb-6 text-center italic">INPUT KAS</h3>
             <div class="space-y-4">
                 <select id="pilihBulan" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-bold outline-none"></select>
                 <input type="number" id="nominalUang" placeholder="Nominal Rp" class="w-full p-4 bg-slate-50 rounded-2xl border-none font-black text-blue-600 outline-none">
             </div>
             <div class="flex gap-3 mt-8">
-                <button id="btnBatal" class="flex-1 py-4 text-slate-400 font-bold text-xs uppercase">Batal</button>
-                <button id="btnSimpan" class="flex-1 py-4 bg-blue-600 text-white rounded-[20px] font-black text-xs">SIMPAN</button>
+                <button onclick="closeModal()" class="flex-1 py-4 text-slate-400 font-bold text-xs uppercase">Batal</button>
+                <button onclick="simpanData()" class="flex-1 py-4 bg-blue-600 text-white rounded-[20px] font-black text-xs">SIMPAN</button>
             </div>
         </div>
     </div>
 
-    <script type="module" src="script.js"></script>
+    <script type="module" src="./script.js"></script>
 </body>
 </html>
