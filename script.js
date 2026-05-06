@@ -8,6 +8,7 @@ const firebaseConfig = {
     storageBucket: "kas-rohis-7574a.firebasestorage.app",
     messagingSenderId: "539974548681",
     appId: "1:539974548681:web:fbd414598ae4ccbf496118",
+    measurementId: "G-HSYT3QP9B8",
     databaseURL: "https://kas-rohis-7574a-default-rtdb.asia-southeast1.firebasedatabase.app"
 };
 
@@ -23,11 +24,12 @@ const listBulan = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli
 
 // Inisialisasi Dropdown
 const selNama = document.getElementById('selectNama');
-listNama.forEach(n => selNama.innerHTML += `<option value="${n}">${n.toUpperCase()}</option>`);
-const selBulan = document.getElementById('pilihBulan');
-listBulan.forEach((b, i) => selBulan.innerHTML += `<option value="${i}">${b}</option>`);
+if(selNama) listNama.forEach(n => selNama.innerHTML += `<option value="${n}">${n.toUpperCase()}</option>`);
 
-// Ambil Data Firebase
+const selBulan = document.getElementById('pilihBulan');
+if(selBulan) listBulan.forEach((b, i) => selBulan.innerHTML += `<option value="${i}">${b}</option>`);
+
+// Sinkronisasi Firebase
 onValue(databaseRef, (snapshot) => {
     const data = snapshot.val();
     if (data && typeof data === 'object') {
@@ -39,55 +41,38 @@ onValue(databaseRef, (snapshot) => {
         listNama.forEach(n => init[n] = listBulan.map(b => ({ namaBulan: b, terbayar: 0 })));
         set(databaseRef, init);
     }
-    renderTabel();
+    loadTable();
+}, (err) => {
+    document.getElementById('dbStatus').innerText = "Koneksi Gagal (Cek Rules!)";
 });
 
-// Tombol-tombol (Event Listeners)
-document.getElementById('adminBtn').addEventListener('click', () => {
+// Fungsi-fungsi yang dipanggil dari HTML
+window.loginAdmin = function() {
     const pass = prompt("Password Admin (SYAHRUL):");
     if (pass === "KAS ROHIS") {
         adminStatus = true;
-        document.getElementById('adminBtn').innerText = "ADMIN: SYAHRUL";
-        document.getElementById('adminBtn').classList.replace('bg-slate-200', 'bg-green-500');
-        document.getElementById('adminBtn').classList.add('text-white');
+        const btn = document.getElementById('adminBtn');
+        btn.innerText = "ADMIN: SYAHRUL";
+        btn.classList.replace('bg-slate-200', 'bg-green-500');
+        btn.classList.add('text-white');
         alert("Login Berhasil!");
-    } else { alert("Salah!"); }
-});
+    } else { alert("Password Salah!"); }
+};
 
-document.getElementById('btnBukaInput').addEventListener('click', () => {
-    if(!adminStatus) return alert("Login Admin dulu, Rul!");
+window.openInput = function() {
+    if(!adminStatus) return alert("Hanya Admin (Syahrul) yang bisa input!");
     document.getElementById('modalBox').classList.remove('hidden');
-});
+};
 
-document.getElementById('btnBatal').addEventListener('click', () => {
+window.closeModal = function() {
     document.getElementById('modalBox').classList.add('hidden');
-});
+};
 
-document.getElementById('selectNama').addEventListener('change', renderTabel);
-
-document.getElementById('btnSimpan').addEventListener('click', () => {
-    if(!adminStatus) return;
-
-    const targetNama = document.getElementById('selectNama').value;
-    const targetBulan = document.getElementById('pilihBulan').value;
-    const inputDuit = document.getElementById('nominalUang');
-    const jumlah = parseInt(inputDuit.value);
-
-    if(!jumlah || jumlah <= 0) return alert("Masukkan nominal!");
-
-    dataLokal[targetNama][targetBulan].terbayar += jumlah;
-    
-    set(databaseRef, dataLokal).then(() => {
-        alert("Berhasil!");
-        document.getElementById('modalBox').classList.add('hidden');
-        inputDuit.value = '';
-    }).catch(e => alert("Error: " + e.message));
-});
-
-function renderTabel() {
+window.loadTable = function() {
     const namaAktif = document.getElementById('selectNama').value;
     const dataNama = dataLokal[namaAktif] || [];
     const container = document.getElementById('isiTabel');
+    if(!container) return;
     container.innerHTML = '';
 
     dataNama.forEach(item => {
@@ -96,6 +81,25 @@ function renderTabel() {
         if(item.terbayar >= 10000) { status = "LUNAS"; sClass = "status-lunas"; }
         else if(item.terbayar > 0) { status = "DICICIL"; sClass = "status-cicil"; }
 
-        container.innerHTML += `<tr><td class="p-4 font-bold">${item.namaBulan}</td><td class="p-4 text-right">Rp ${item.terbayar.toLocaleString()}</td><td class="p-4 text-right text-rose-500">Rp ${Math.max(0, sisa).toLocaleString()}</td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-[9px] font-black border ${sClass}">${status}</span></td></tr>`;
+        container.innerHTML += `<tr><td class="p-4 font-bold text-slate-600">${item.namaBulan}</td><td class="p-4 text-right text-green-600 font-black">Rp ${item.terbayar.toLocaleString()}</td><td class="p-4 text-right text-rose-500 font-black">Rp ${Math.max(0, sisa).toLocaleString()}</td><td class="p-4 text-center"><span class="px-3 py-1 rounded-full text-[9px] font-black border ${sClass}">${status}</span></td></tr>`;
     });
-}
+};
+
+window.simpanData = function() {
+    if(!adminStatus) return;
+
+    const targetNama = document.getElementById('selectNama').value;
+    const targetBulan = document.getElementById('pilihBulan').value;
+    const inputDuit = document.getElementById('nominalUang');
+    const jumlah = parseInt(inputDuit.value);
+
+    if(!jumlah || jumlah <= 0) return alert("Masukkan nominal angka!");
+
+    dataLokal[targetNama][targetBulan].terbayar += jumlah;
+    
+    set(databaseRef, dataLokal).then(() => {
+        alert("Data Berhasil Disimpan!");
+        window.closeModal();
+        inputDuit.value = '';
+    }).catch(e => alert("Gagal Simpan: " + e.message));
+};
